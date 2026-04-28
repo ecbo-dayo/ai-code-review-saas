@@ -1,27 +1,27 @@
 # 画面設計
 
-## ![ログイン画面](docs/images/ui_login.png)
+## ![ログイン画面](images/ui_login.png)
 
 ログイン画面
 -メールアドレス
 -パスワード
 
-## ![コード入力画面](docs/images/ui_code_input.png)
+## ![コード入力画面](images/ui_code_input.png)
 
 コード入力画面
 -コピー＆ペースト
 
-## ![アップロード画面](docs/images/ui_fail_upload.png)
+## ![アップロード画面](images/ui_fail_upload.png)
 
 アップロード画面
 -ファイルをアップロード
 
-## ![GitHubリポジトリ入力画面](docs/images/ui_GitHub_upload.png)
+## ![GitHubリポジトリ入力画面](images/ui_GitHub_upload.png)
 
 GitHubリポジトリ入力画面
 -リポジトリを入力する
 
-## ![解析結果全体概要画面](docs/images/ui_result_01.png)
+## ![解析結果全体概要画面](images/ui_result_01.png)
 
 解析結果全体概要画面
 -入力コード
@@ -33,7 +33,7 @@ GitHubリポジトリ入力画面
 -分析結果
 
 
-## ![解析結果ファイル概要画面](docs/images/ui_result_02.png)
+## ![解析結果ファイル概要画面](images/ui_result_02.png)
 
 -入力コード
 -スコア
