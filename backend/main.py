@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.api.routes.analyze import router as analyze_router
 
 app = FastAPI(title="AI Code Review SaaS")
 
@@ -10,6 +11,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(analyze_router, prefix="/api/analyze", tags=["analyze"])
 
 @app.get("/")
 def root():
