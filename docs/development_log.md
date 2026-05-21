@@ -15,3 +15,19 @@ Figmaで作成
 
 ### 技術
 Figmaで作成
+
+## 2026-05-4
+
+### 実装
+Headerコンポーネント作成、CodeEditorPanelコンポーネント作成、ファイル追加、削除機能Analyzeボタン実装
+
+### 技術
+Next.js
+
+## 2026-05-21
+
+### 実装
+Summaryタブ（スコア・Insight・Priority・複雑度グラフ）、Fail Summaryタブ（ファイル一覧表・詳細パネル）、ファイルクリックで詳細表示
+
+## 技術
+Next.js
