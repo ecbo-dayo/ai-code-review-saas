@@ -4,14 +4,46 @@ import { Plus, XCircle, BarChart2, Upload, GitBranch, Code } from 'lucide-react'
 import Header from './components/Header';
 import CodeEditorPanel from './components/CodeEditorPanel';
 import ResultDashboard from './components/ResultDashboard';
+import { analyzeCode, AnalyzeResponse, FileInput } from './lib/api';
 
 export default function Home() {
   const [panels, setPanels] = useState([0]);
   const [showResult, setShowResult] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<AnalyzeResponse | null>(null);
+  const [panelData, setPanelData] = useState<FileInput[]>([{ filename: '', code: '' }]);
 
-  const addPanel = () => setPanels([...panels, panels.length]);
-  const removePanel = (index: number) =>
+  const addPanel = () => {
+    setPanels([...panels, panels.length]);
+    setPanelData([...panelData, { filename: '', code: '' }]);
+  };
+
+  const removePanel = (index: number) => {
     setPanels(panels.filter((_, i) => i !== index));
+    setPanelData(panelData.filter((_, i) => i !== index));
+  };
+
+  const updatePanel = (index: number, data: FileInput) => {
+    const updated = [...panelData];
+    updated[index] = data;
+    setPanelData(updated);
+  };
+
+  const handleAnalyze = async () => {
+    const validFiles = panelData.filter(f => f.code.trim() !== '');
+    if (validFiles.length === 0) return;
+
+    setIsLoading(true);
+    try {
+      const result = await analyzeCode(validFiles);
+      setAnalysisResult(result);
+      setShowResult(true);
+    } catch (error) {
+      console.error('解析エラー:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#070e1a] text-white">
@@ -60,11 +92,12 @@ export default function Home() {
             </>
           )}
           <button
-            onClick={() => setShowResult(true)}
-            className="flex items-center gap-2 bg-green-600 hover:bg-green-500 text-white text-sm px-4 py-2 rounded-md"
+            onClick={handleAnalyze}
+            disabled={isLoading}
+            className="flex items-center gap-2 bg-green-600 hover:bg-green-500 disabled:bg-gray-600 text-white text-sm px-4 py-2 rounded-md"
           >
             <BarChart2 className="w-4 h-4" />
-            Analyze
+            {isLoading ? 'Analyzing...' : 'Analyze'}
           </button>
         </div>
       </div>
@@ -72,7 +105,7 @@ export default function Home() {
       {/* メインコンテンツ */}
       <div className="p-6">
         {showResult ? (
-          <ResultDashboard />
+          <ResultDashboard result={analysisResult} />
         ) : (
           panels.map((_, i) => (
             <CodeEditorPanel
@@ -80,6 +113,7 @@ export default function Home() {
               index={i}
               showRemove={i !== 0}
               onRemove={() => removePanel(i)}
+              onChange={(data) => updatePanel(i, data)}
             />
           ))
         )}
