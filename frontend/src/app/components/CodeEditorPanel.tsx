@@ -1,16 +1,28 @@
 'use client';
 import { useState } from 'react';
 import { Trash2, ChevronUp } from 'lucide-react';
+import { FileInput } from '../lib/api';
 
 interface Props {
   index: number;
   onRemove?: () => void;
   showRemove?: boolean;
+  onChange?: (data: FileInput) => void;
 }
 
-export default function CodeEditorPanel({ index, onRemove, showRemove }: Props) {
+export default function CodeEditorPanel({ index, onRemove, showRemove, onChange }: Props) {
   const [fileName, setFileName] = useState('');
   const [code, setCode] = useState('');
+
+  const handleFileNameChange = (value: string) => {
+    setFileName(value);
+    onChange?.({ filename: value, code });
+  };
+
+  const handleCodeChange = (value: string) => {
+    setCode(value);
+    onChange?.({ filename: fileName, code: value });
+  };
 
   const lines = code.split('\n');
 
@@ -21,7 +33,7 @@ export default function CodeEditorPanel({ index, onRemove, showRemove }: Props) 
         <input
           type="text"
           value={fileName}
-          onChange={(e) => setFileName(e.target.value)}
+          onChange={(e) => handleFileNameChange(e.target.value)}
           placeholder="File name (e.g., main.py)"
           className="bg-transparent text-gray-300 text-sm outline-none placeholder-gray-500 flex-1"
         />
@@ -50,7 +62,7 @@ export default function CodeEditorPanel({ index, onRemove, showRemove }: Props) 
         {/* テキストエリア */}
         <textarea
           value={code}
-          onChange={(e) => setCode(e.target.value)}
+          onChange={(e) => handleCodeChange(e.target.value)}
           placeholder="Paste your code here..."
           className="flex-1 bg-transparent text-gray-300 text-sm p-3 outline-none resize-none placeholder-gray-600 font-mono"
           rows={10}
