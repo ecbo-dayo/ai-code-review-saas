@@ -12,7 +12,7 @@ Backend
 FastAPI
 
 AI
-OpenAI API
+Claude API
 
 Database
 PostgreSQL

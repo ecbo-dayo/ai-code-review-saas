@@ -31,3 +31,19 @@ Summaryタブ（スコア・Insight・Priority・複雑度グラフ）、Fail Su
 
 ## 技術
 Next.js
+
+## 2026-05-22
+
+### 実装
+コード受け取りエンドポイント作成、radonで複雑度計算、flake8でIssue検出、banditでセキュリティ検出、スコア計算ロジック実装、レスポンス返却
+
+### 技術
+FastAPI
+
+## 2026-05-22
+
+## 実装
+axiosでAPI呼び出し実装（lib/api.ts）、Analyzeボタンで実際に解析実行、解析結果をダッシュボードに反映
+
+## 技術
+Next.js、FastAPI
