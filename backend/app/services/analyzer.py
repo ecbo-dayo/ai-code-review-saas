@@ -164,26 +164,36 @@ def calculate_complexity(code: str) -> float:
 
     for line in lines:
         stripped = line.strip()
-        # 分岐・ループのカウント
-        if re.search(r'\bif\b', stripped): complexity += 1
-        if re.search(r'\belif\b', stripped): complexity += 1
-        if re.search(r'\bfor\b', stripped): complexity += 1
-        if re.search(r'\bwhile\b', stripped): complexity += 1
-        if re.search(r'\bexcept\b', stripped): complexity += 1
-        # and/orは0.5として計算（実務考慮）
+        if not stripped:
+            continue
+
+        # インデントの深さを計算（空白4つ＝1階層）
+        indent = len(line) - len(line.lstrip())
+        depth = indent // 4  # 0階層目, 1階層目, 2階層目...
+
+        # 深さに応じた重み（深いほど重い）
+        # 1階層目まで=1.0、2階層目から深くなるほど加算
+        nest_weight = 1 + max(0, depth - 1) * 0.5
+
+        # 分岐・ループを深さの重み付きでカウント
+        if re.search(r'\bif\b', stripped): complexity += nest_weight
+        if re.search(r'\belif\b', stripped): complexity += nest_weight
+        if re.search(r'\bfor\b', stripped): complexity += nest_weight
+        if re.search(r'\bwhile\b', stripped): complexity += nest_weight
+        if re.search(r'\bexcept\b', stripped): complexity += nest_weight
+
+        # and/orは0.5（深さは見ない、単純に論理の複雑さ）
         complexity += stripped.count(' and ') * 0.5
         complexity += stripped.count(' or ') * 0.5
 
     return round(complexity, 1)
 
-
 def get_complexity_level(complexity: float) -> str:
     if complexity >= 11:
-        return "high"    # 赤警告
+        return "high"
     if complexity >= 6:
-        return "medium"  # 黄色警告
-    return "low"         # 警告なし
-
+        return "medium"
+    return "low"
 
 # -------------------------
 # Debt計算
@@ -287,7 +297,9 @@ def validate_code(code: str) -> bool:
         r'\bif\b.+:',
         r'\bfor\b.+:',
         r'\bwhile\b.+:',
+        r'\breturn\b',
         r'\bimport\b',
+        r'\w+\s*=\s*\S+',
         r'\bfunction\b',
         r'\bconst\b',
         r'\bvar\b',
@@ -301,7 +313,7 @@ def validate_code(code: str) -> bool:
     ]
 
     matches = sum(1 for p in code_patterns if re.search(p, code))
-    return matches >= 2
+    return matches >= 3
 
 
 # -------------------------

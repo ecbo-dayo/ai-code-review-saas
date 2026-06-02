@@ -1,7 +1,8 @@
 'use client';
 import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { AnalyzeResponse, FileResult, IssueItem } from '../lib/api';
+import { AnalyzeResponse, FileResult, IssueItem, SuggestionRequest } from '../lib/api';
+import IssueTab from './IssueTab';
 
 interface Props {
   result: AnalyzeResponse | null;
@@ -241,37 +242,112 @@ export default function ResultDashboard({ result }: Props) {
                 Complexity <span className={complexityTextColor(currentSelected.complexity)}>{currentSelected.complexity}</span>
               </p>
               <div className="flex flex-col gap-1">
-                {currentSelected.issueList.map((issue: IssueItem, i: number) => (
-                  <div key={i} className="border border-[#1e2a3a] rounded">
-                    <button
-                      onClick={() => toggleIssue(`${i}`)}
-                      className="w-full flex items-center justify-between px-3 py-2 text-xs"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full ${
-                          issue.severity === 'high' ? 'bg-red-500' :
-                          issue.severity === 'medium' ? 'bg-orange-500' : 'bg-green-500'
-                        }`} />
-                        <span className={
-                          issue.severity === 'high' ? 'text-red-400' :
-                          issue.severity === 'medium' ? 'text-orange-400' : 'text-green-400'
-                        }>{issue.category}</span>
-                        <span className="text-gray-300">{issue.label}</span>
-                      </div>
-                      {expandedIssues[`${i}`]
-                        ? <ChevronUp className="w-3 h-3 text-gray-500" />
-                        : <ChevronDown className="w-3 h-3 text-gray-500" />
-                      }
-                    </button>
-                    {expandedIssues[`${i}`] && (
-                      <div className="px-3 pb-2 text-xs text-gray-400 border-t border-[#1e2a3a] pt-2">
-                        <p>[ 問題 ] {issue.label}が検出されました</p>
-                        <p className="mt-1">[ 改善 ] 処理を分割し、責務を明確にしてください</p>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                {(() => {
+                  const list = currentSelected.issueList;
+                  const highs = list.filter(i => i.severity === 'high');
+                  const mediums = list.filter(i => i.severity === 'medium');
+                  const lows = list.filter(i => i.severity === 'low');
+
+                  // カテゴリごとにまとめる関数
+                  const groupByCategory = (items: IssueItem[]) => {
+                    const map: { [cat: string]: IssueItem[] } = {};
+                    items.forEach(i => {
+                      if (!map[i.category]) map[i.category] = [];
+                      map[i.category].push(i);
+                    });
+                    return map;
+                  };
+
+                  const mediumGroups = groupByCategory(mediums);
+                  const lowGroups = groupByCategory(lows);
+
+                  const tabs: React.ReactNode[] = [];
+
+                  // High → issueごとに1タブ
+                  highs.forEach((issue, idx) => {
+                    const req: SuggestionRequest = {
+                      type: 'issue',
+                      code: currentSelected.code,
+                      category: issue.category,
+                      problem: issue.problem,
+                    };
+                    tabs.push(
+                      <IssueTab
+                        key={`high-${idx}`}
+                        dotColor="bg-red-500"
+                        textColor="text-red-400"
+                        title={issue.category}
+                        problems={[issue.problem]}
+                        suggestReq={req}
+                      />
+                    );
+                  });
+
+                  // Medium → カテゴリごとに1タブ
+                  Object.entries(mediumGroups).forEach(([cat, items]) => {
+                    const totalCount = items.reduce((s, i) => s + i.count, 0);
+                    const req: SuggestionRequest = {
+                      type: 'issue',
+                      code: currentSelected.code,
+                      category: cat,
+                      problem: items.map(i => i.problem).join(' / '),
+                    };
+                    tabs.push(
+                      <IssueTab
+                        key={`med-${cat}`}
+                        dotColor="bg-yellow-500"
+                        textColor="text-yellow-400"
+                        title={totalCount > 1 ? `${cat} (${totalCount})` : cat}
+                        problems={items.map(i => i.problem)}
+                        suggestReq={req}
+                      />
+                    );
+                  });
+
+                  // Low → カテゴリごとに1タブ
+                  Object.entries(lowGroups).forEach(([cat, items]) => {
+                    const totalCount = items.reduce((s, i) => s + i.count, 0);
+                    const req: SuggestionRequest = {
+                      type: 'issue',
+                      code: currentSelected.code,
+                      category: cat,
+                      problem: items.map(i => i.problem).join(' / '),
+                    };
+                    tabs.push(
+                      <IssueTab
+                        key={`low-${cat}`}
+                        dotColor="bg-green-500"
+                        textColor="text-green-400"
+                        title={totalCount > 1 ? `${cat} (${totalCount})` : cat}
+                        problems={items.map(i => i.problem)}
+                        suggestReq={req}
+                      />
+                    );
+                  });
+
+                  // 複雑度タブ → medium/highのときだけ
+                  if (currentSelected.complexityLevel === 'high' || currentSelected.complexityLevel === 'medium') {
+                    const isHigh = currentSelected.complexityLevel === 'high';
+                    const req: SuggestionRequest = {
+                      type: 'complexity',
+                      code: currentSelected.code,
+                      complexity: currentSelected.complexity,
+                    };
+                    tabs.push(
+                      <IssueTab
+                        key="complexity"
+                        dotColor={isHigh ? 'bg-red-500' : 'bg-yellow-500'}
+                        textColor={isHigh ? 'text-red-400' : 'text-yellow-400'}
+                        title="Complexity"
+                        problems={[`複雑度が${currentSelected.complexity}です。${isHigh ? '処理が複雑で理解しにくい状態です。' : 'やや複雑になっています。'}`]}
+                        suggestReq={req}
+                      />
+                    );
+                  }
+                  return tabs;
+                })()}
               </div>
+
             </div>
           </div>
         )}
