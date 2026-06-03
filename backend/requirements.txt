@@ -1,0 +1,7 @@
+fastapi==0.136.1
+uvicorn==0.46.0
+pydantic==2.13.3   # schemaで使ってるデータ検証
+pydantic-settings==2.14.0   # schemaで使ってるデータ検証
+python-dotenv==1.2.2   # .envからAPIキーを読む用
+python-multipart==0.0.27   # FastAPIがフォームデータを扱う用
+anthropic==0.97.0
