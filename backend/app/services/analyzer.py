@@ -308,6 +308,9 @@ def validate_code(code: str) -> bool:
         r'\bpublic\b',
         r'\bprivate\b',
         r'\bvoid\b',
+        r'\bprint\s*\(',
+        r'\w+\s*\([^)]*\)',
+        r'\belse\b',
         r'\{',
         r'\}',
     ]
