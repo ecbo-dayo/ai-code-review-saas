@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { AnalyzeResponse, FileResult, IssueItem, SuggestionRequest } from '../lib/api';
+import { AnalyzeResponse, FileResult, IssueItem, SuggestionRequest, getSuggestion } from '../lib/api';
 import IssueTab from './IssueTab';
 
 interface Props {
@@ -42,9 +42,35 @@ export default function ResultDashboard({ result }: Props) {
   const [activeTab, setActiveTab] = useState<'summary' | 'failsummary'>('summary');
   const [selectedFile, setSelectedFile] = useState<FileResult | null>(result?.files[0] ?? null);
   const [expandedIssues, setExpandedIssues] = useState<{ [key: string]: boolean }>({});
+  const [refactorCode, setRefactorCode] = useState<string>('');
+  const [refactorOpen, setRefactorOpen] = useState(false);
+  const [refactorLoading, setRefactorLoading] = useState(false);
 
   const toggleIssue = (key: string) => {
     setExpandedIssues(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+  const handleRefactor = async () => {
+    // すでに開いてるなら閉じる
+    if (refactorOpen) {
+      setRefactorOpen(false);
+      return;
+    }
+    setRefactorOpen(true);
+    // まだ取得してなければAIを呼ぶ
+    if (!refactorCode) {
+      setRefactorLoading(true);
+      try {
+        const res = await getSuggestion({
+          type: 'refactor',
+          code: currentSelected.code,
+        });
+        setRefactorCode(res.suggestion);
+      } catch {
+        setRefactorCode('リファクタリングの取得に失敗しました');
+      } finally {
+        setRefactorLoading(false);
+      }
+    }
   };
 
   if (!result) return <div className="text-gray-400">解析結果がありません</div>;
@@ -82,22 +108,25 @@ export default function ResultDashboard({ result }: Props) {
     <div className="flex gap-4 h-full">
       {/* 左：コードビューア */}
       <div className="w-[640px] flex flex-col gap-3 flex-shrink-0">
-        {result.files.map(file => (
-          <div key={file.name} className="border border-[#1e2a3a] rounded-md overflow-hidden">
-            <div className="bg-[#0d1b2a] px-4 py-2 flex items-center justify-between">
-              <span className="text-gray-300 text-sm">{file.name}</span>
-              <ChevronUp className="text-blue-400 w-4 h-4" />
-            </div>
-            <div className="bg-[#0a1628] h-[150px] flex">
-              <div className="text-gray-600 text-sm px-3 pt-3 select-none min-w-[40px] text-right">
-                {Array.from({ length: 5 }, (_, i) => <div key={i}>{i + 1}</div>)}
+        {result.files.map(file => {
+          const codeLines = file.code.split('\n');
+          return (
+            <div key={file.name} className="border border-[#1e2a3a] rounded-md overflow-hidden">
+              <div className="bg-[#0d1b2a] px-4 py-2 flex items-center justify-between">
+                <span className="text-gray-300 text-sm">{file.name}</span>
+                <ChevronUp className="text-blue-400 w-4 h-4" />
               </div>
-              <div className="text-gray-500 text-sm p-3 font-mono text-xs">
-                <div className="text-gray-500">コードを入力して解析してください</div>
+              <div className="bg-[#0a1628] max-h-[300px] overflow-y-auto flex">
+                <div className="text-gray-600 text-xs px-3 pt-3 select-none min-w-[40px] text-right font-mono leading-relaxed">
+                  {codeLines.map((_, i) => <div key={i}>{i + 1}</div>)}
+                </div>
+                <pre className="text-gray-300 text-xs p-3 font-mono leading-relaxed whitespace-pre overflow-x-auto flex-1">
+                  {file.code}
+                </pre>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* 右：結果パネル */}
@@ -225,7 +254,9 @@ export default function ResultDashboard({ result }: Props) {
             <div className="bg-[#0d1f35] border border-[#1e2a3a] rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-blue-400 text-sm font-medium">{currentSelected.name}</span>
-                <button className="text-blue-400 text-xs">✨ Review Refactor</button>
+                <button onClick={handleRefactor} className="text-blue-400 text-xs hover:text-blue-300">
+                  ✨ {refactorOpen ? 'リファクタを閉じる' : 'Review Refactor'}
+                </button>
               </div>
               <div className="flex items-center gap-2 mb-1">
                 <span className={`w-2 h-2 rounded-full ${statusDot(currentSelected.status)}`} />
@@ -352,6 +383,24 @@ export default function ResultDashboard({ result }: Props) {
           </div>
         )}
       </div>
+
+      {/* リファクタリング結果カラム */}
+      {refactorOpen && (
+        <div className="w-[480px] flex-shrink-0 border border-[#1e2a3a] rounded-md overflow-hidden flex flex-col">
+          <div className="bg-[#0d1b2a] px-4 py-2 flex items-center justify-between">
+            <span className="text-gray-300 text-sm flex items-center gap-2">
+              ✨ Refactored: {currentSelected.name}
+              <span className="text-[10px] text-gray-500 border border-gray-600 rounded px-1">AI (mock)</span>
+            </span>
+          </div>
+          <div className="bg-[#0a1628] flex-1 overflow-auto p-3">
+            {refactorLoading
+              ? <p className="text-gray-500 text-xs">生成中...</p>
+              : <pre className="text-gray-300 text-xs font-mono leading-relaxed whitespace-pre">{refactorCode}</pre>
+            }
+          </div>
+        </div>
+      )}
     </div>
   );
 }
